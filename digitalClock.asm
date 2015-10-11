@@ -178,6 +178,10 @@ data segment
     digit_unit db 0
     digit_ten db 0  
     time db 0      
+    minute db 0
+    second db 0
+    current_minute db 0
+    current_second db 0    
     
     digit_pointer dw 10 dup(?)                                   
                                              
@@ -200,10 +204,38 @@ start:
     mov     es, ax
 
     call    set_digit_pointer
-    call    load_time
-
-    ; print hour -----
-    mov     time, ch
+    
+    
+main_loop:        
+    call    load_time 
+    
+    mov     al, current_second    
+    cmp     second, al
+    jne     do_print    
+                                  
+    mov     al, current_minute                                      
+    cmp     minute, al
+    jne     do_print
+       
+    jmp     main_loop
+                 
+    do_print:   
+    mov     al, current_minute
+    mov     minute, al                        
+    mov     al, current_second                
+    mov     second, al
+    
+    call    clear_screen    
+    call    print                           
+    jmp     main_loop    
+       
+    jmp     fim
+    
+    
+print:
+    ; print minute ----- 
+    mov     al, current_minute
+    mov     time, al
     call    parse_time
     
     ; hour ten
@@ -220,8 +252,9 @@ start:
     mov     column, 20
     call    print_digit 
        
-    ; print minute -----
-    mov     time, cl
+    ; print second -----    
+    mov     al, current_second
+    mov     time, al
     call    parse_time
     
     ; minute ten
@@ -237,13 +270,26 @@ start:
     
     mov     column, 60
     call    print_digit      
-        
-    jmp     fim
-
-
-load_time:      ; save CH = hour, CL = minute, DL = second 
+     
+    ret
+ 
+ 
+clear_screen:   ; get and set video mode
+    mov     ah, 0fh
+    int     10h   
+    
+    mov     ah, 0
+    int     10h
+    
+    ret
+    
+    
+load_time:      ; save CH = hour, CL = minute, DH = second 
     mov     ah, 2Ch
     int     21h 
+    
+    mov     current_minute, cl
+    mov     current_second, dh
     
     ret
  
